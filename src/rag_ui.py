@@ -71,7 +71,7 @@ llm = LLM(model_name=reader_model_name)
 encoding = get_encoding("cl100k_base")
 
 ## Display properties
-display_properties = ['guest', 'title', 'content', 'episode_url', 'thumbnail_url', 'length_seconds']
+display_properties = ['guest', 'content', 'thumbnail_url', 'summary', 'title', 'episode_url', 'length_seconds', 'expanded_content']
 
 ## Data
 data = load_data(data_path)
@@ -138,16 +138,17 @@ def main(retriever: WeaviateWCS):
 
         if guest_filter:
             logger.info(f'FILTER: {guest_filter}')
-            hybrid_response = retriever.hybrid_search(query, collection_name, alpha=alpha_input, limit=retrieval_limit, filters=guest_filter)
+            hybrid_response = retriever.hybrid_search(query, collection_name, return_properties=display_properties, alpha=alpha_input, limit=retrieval_limit, filters=guest_filter)
 #            hybrid_response = huberman.query.hybrid(query, alpha=alpha_input, limit=retrieval_limit, filters=guest_filter)
         else:
-            hybrid_response = retriever.hybrid_search(query, collection_name, alpha=alpha_input, limit=retrieval_limit)
+            hybrid_response = retriever.hybrid_search(query, collection_name, return_properties=display_properties, alpha=alpha_input, limit=retrieval_limit)
 
         ranked_response = reranker.rerank(hybrid_response, query, top_k=reranker_topk)
         logger.info(f'# RANKED RESULTS: {len(ranked_response)}')   
 
         # token_threshold = 2500 # generally allows for 3-5 results of chunk_size 256
         content_field = 'content'
+        # content_field = 'expanded_content'
 
         # validate token count is below threshold
         valid_response = validate_token_threshold(  ranked_response, 
@@ -159,6 +160,7 @@ def main(retriever: WeaviateWCS):
                                                     content_field=content_field,
                                                     verbose=True)
         logger.info(f'# VALID RESULTS: {len(valid_response)}')
+        logger.info(f'# RESPONSE: {valid_response}')
         #set to False to skip LLM call
         make_llm_call = True
         # prep for streaming response
@@ -189,14 +191,16 @@ def main(retriever: WeaviateWCS):
                 episode_url = hit['episode_url']
                 title = hit['title']
                 show_length = hit['length_seconds']
+                # logger.info(f'show_length: {show_length} seconds')
                 time_string = convert_seconds(show_length) # convert show_length to readable time string
                 with col1:
                     st.write( search_result(i=i, 
                                             url=episode_url,
                                             guest=hit['guest'],
                                             title=title,
-                                            content=ranked_response[i]['content'], 
-                                            length=time_string),
+                                            content=ranked_response[i]['content']
+                                            ,length=time_string
+                                            ),
                                             unsafe_allow_html=True)
                     st.write('\n\n')
 
