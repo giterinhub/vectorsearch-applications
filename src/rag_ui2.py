@@ -204,7 +204,7 @@ def main(retriever: WeaviateWCS):
             if make_llm_call:
                 with st.chat_message('Huberman Labs', avatar='./app_assets/huberman_logo.png'):
                     stream_obj = stream_chat(llm, prompt, max_tokens=250, temperature=temperature_input)
-                    st.write_stream(stream_obj) # https://docs.streamlit.io/develop/api-reference/write-magic/st.write_stream
+                    string_completion = st.write_stream(stream_obj) # https://docs.streamlit.io/develop/api-reference/write-magic/st.write_stream
           
             # need to pull out the completion for cost calculation
             string_completion = ' '.join([c for c in stream_obj])
